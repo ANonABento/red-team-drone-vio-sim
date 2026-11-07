@@ -1,0 +1,289 @@
+<div class="engine" id="engine">
+  <header class="topbar">
+    <div class="stack tight brand">
+      <span class="eyebrow">Red team sim</span>
+      <strong class="type-heading-sm" id="g-title">M2-AI with the Justice D</strong>
+    </div>
+    <div class="seg transport" role="toolbar" aria-label="Simulation time">
+      <button class="small" id="g-play" type="button" aria-keyshortcuts="Space">Pause</button>
+      <button class="small secondary" id="g-step" type="button" aria-keyshortcuts=".">Step a frame</button>
+      <label class="row tight-row speed"><span class="sr-only">Time</span><select id="g-speed" aria-keyshortcuts="- =">
+        <option value="4">4&times;</option><option value="2">2&times;</option><option value="1" selected>Real time</option>
+        <option value="0.5">&frac12;&times;</option><option value="0.25">&frac14;&times;</option><option value="0.1">10&times; slower</option>
+        <option value="0.01">100&times; slower</option><option value="0.001">1,000&times; slower</option></select></label>
+      <button class="small ghost" id="g-reset" type="button">Reset</button>
+    </div>
+    <div class="seg" role="group" aria-label="View">
+      <button class="small" id="g-view-chase" type="button" aria-keyshortcuts="1">Chase</button>
+      <button class="small secondary" id="g-view-orbit" type="button" aria-keyshortcuts="2">Orbit</button>
+      <button class="small secondary" id="g-view-cam" type="button" aria-keyshortcuts="3">Camera</button>
+      <button class="small secondary" id="g-view-split" type="button" aria-keyshortcuts="4">Shutter compare</button>
+    </div>
+    <nav class="row tight-row pages" aria-label="Pages">
+      <button class="small ghost" id="g-learn-open" type="button">Learn</button>
+      <button class="small ghost" id="g-measure-open" type="button">Measure</button>
+      <button class="small ghost" id="g-plan-open" type="button">Plan</button>
+      <button class="small ghost" id="g-export-open" type="button">Export</button>
+    </nav>
+  </header>
+
+  <div class="engine-body" id="g-body">
+    <section class="stage stack">
+      <div class="viewport card" id="g-viewport" tabindex="0" aria-label="Simulation view. In Pilot mode fly with W A S D, climb with R, descend with F, turn with Q and E.">
+        <canvas id="g-view" aria-hidden="true"></canvas>
+        <canvas id="g-overlay" aria-hidden="true"></canvas>
+        <div class="hud hud-tl" id="g-hud-tl" aria-hidden="true"></div>
+        <div class="hud hud-bl" id="g-hud-bl" aria-live="off"></div>
+        <p class="hud hud-bc type-label-md" id="g-clock" hidden></p>
+        <p class="building meta" id="g-building" hidden>Building the site&hellip;</p>
+      </div>
+      <div class="row between pilotbar">
+        <div class="row tight-row">
+          <div class="seg" role="group" aria-label="Flight mode">
+            <button class="small" id="g-mode-hold" type="button" aria-keyshortcuts="H">Hold</button>
+            <button class="small secondary" id="g-mode-pilot" type="button" aria-keyshortcuts="P">Pilot</button>
+          </div>
+          <button class="small ghost" id="g-kick" type="button" aria-keyshortcuts="K">Kick it</button>
+          <button class="small ghost" id="g-blind" type="button" title="Blind VIO for 3 seconds">Cut tracking 3 s</button>
+        </div>
+        <div class="row tight-row">
+          <label class="row tight-row"><input type="checkbox" id="g-feat" checked> Features</label>
+          <label class="row tight-row"><input type="checkbox" id="g-inset" checked> Second view</label>
+        </div>
+      </div>
+      <div class="row between pad-row" id="g-pad-row">
+        <p class="meta keys" id="g-keys"></p>
+        <div class="pad" id="g-pad" role="group" aria-label="Sticks" hidden>
+          <button class="small secondary" type="button" data-stick="yaw:1" aria-label="Turn left">&#8634;</button>
+          <button class="small secondary" type="button" data-stick="fwd:1" aria-label="Forward">&#8593;</button>
+          <button class="small secondary" type="button" data-stick="yaw:-1" aria-label="Turn right">&#8635;</button>
+          <button class="small secondary" type="button" data-stick="up:1" aria-label="Climb">Up</button>
+          <button class="small secondary" type="button" data-stick="right:-1" aria-label="Left">&#8592;</button>
+          <button class="small secondary" type="button" data-stick="fwd:-1" aria-label="Back">&#8595;</button>
+          <button class="small secondary" type="button" data-stick="right:1" aria-label="Right">&#8594;</button>
+          <button class="small secondary" type="button" data-stick="up:-1" aria-label="Descend">Down</button>
+        </div>
+      </div>
+      <div class="readouts" id="g-readouts"></div>
+      <div class="plots">
+        <figure class="card stack tight plot">
+          <figcaption class="row between"><span class="eyebrow">From above</span><span class="meta">Circle is 1 m around the mark</span></figcaption>
+          <canvas id="g-track" aria-label="Track from above: where it is and where it thinks it is"></canvas>
+          <div class="row legend meta"><span class="key k1"></span>Where it is <span class="key k3"></span>Where it thinks it is</div>
+        </figure>
+        <figure class="card stack tight plot">
+          <figcaption class="row between"><span class="eyebrow">Drift and features</span><span class="meta" id="g-drift-note"></span></figcaption>
+          <canvas id="g-drift" aria-label="Drift from the mark and features tracked over time"></canvas>
+          <div class="row legend meta"><span class="key k1"></span>Drift <span class="key k5"></span>Features VIO tracks</div>
+        </figure>
+      </div>
+    </section>
+
+    <aside class="inspector card stack" aria-label="Simulation settings">
+      <div class="tabs seg" role="tablist" aria-label="Settings">
+        <button class="small" role="tab" id="g-tab-scene" aria-controls="g-panel-scene" type="button">Scene</button>
+        <button class="small secondary" role="tab" id="g-tab-drone" aria-controls="g-panel-drone" type="button">Drone</button>
+        <button class="small secondary" role="tab" id="g-tab-nav" aria-controls="g-panel-nav" type="button">Nav</button>
+        <button class="small secondary" role="tab" id="g-tab-camera" aria-controls="g-panel-camera" type="button">Camera</button>
+        <button class="small secondary" role="tab" id="g-tab-tests" aria-controls="g-panel-tests" type="button">Tests</button>
+      </div>
+
+      <div class="stack panel" role="tabpanel" id="g-panel-scene" aria-labelledby="g-tab-scene">
+        <label class="stack tight">Site <select id="g-site"></select></label>
+        <p class="meta" id="g-site-note"></p>
+        <div class="stack" id="g-world-edit">
+          <hr>
+          <span class="eyebrow">Build a world</span>
+          <label class="stack tight">Ground <select id="g-surface"></select></label>
+          <label class="stack tight">Light <select id="g-light"></select></label>
+          <label class="row tight-row"><input type="checkbox" id="g-patches"> Patches of other ground</label>
+          <label class="row tight-row"><input type="checkbox" id="g-shadow" checked> Drone casts a shadow</label>
+          <div class="row tight-row"><button class="small secondary" id="g-reseed" type="button">New layout</button><span class="meta" id="g-seed"></span></div>
+          <label class="stack tight">Name <input id="g-world-name" maxlength="80" placeholder="Like: Gravel lot at dusk"></label>
+          <button class="secondary" id="g-world-save" type="button">Save this world for the group</button>
+        </div>
+      </div>
+
+      <div class="stack panel" role="tabpanel" id="g-panel-drone" aria-labelledby="g-tab-drone" hidden>
+        <label class="stack tight"><span class="row between"><span>Altitude</span><span class="meta" id="g-alt-out"></span></span>
+          <input type="range" id="g-alt" min="2" max="120" step="1" value="20"></label>
+        <div class="row rungs" id="g-rungs" role="group" aria-label="Altitude presets"></div>
+        <hr>
+        <span class="eyebrow">Weather</span>
+        <label class="stack tight"><span class="row between"><span>Wind</span><span class="meta" id="g-wind-out"></span></span>
+          <input type="range" id="g-wind" min="0" max="15" step="0.5" value="4"></label>
+        <label class="stack tight"><span class="row between"><span>Blowing from</span><span class="meta" id="g-dir-out"></span></span>
+          <input type="range" id="g-dir" min="0" max="355" step="5" value="250"></label>
+        <label class="stack tight">Gusts <select id="g-gust"></select></label>
+        <hr>
+        <span class="eyebrow">Airframe, until we have real M2-AI numbers</span>
+        <label class="row between">Mass, kg <input type="number" id="g-mass" min="0.5" max="10" step="0.1"></label>
+        <label class="row between">Max thrust per motor, N <input type="number" id="g-thrust" min="3" max="60" step="0.5"></label>
+        <label class="stack tight"><span class="row between"><span>Battery</span><span class="meta" id="g-charge-out"></span></span>
+          <input type="range" id="g-charge" min="0.05" max="1" step="0.05" value="0.9"></label>
+        <p class="meta" id="g-hover"></p>
+      </div>
+
+      <div class="stack panel" role="tabpanel" id="g-panel-nav" aria-labelledby="g-tab-nav" hidden>
+        <label class="stack tight">GNSS <select id="g-gnss"></select></label>
+        <label class="row tight-row"><input type="checkbox" id="g-vio" checked> VIO on</label>
+        <label class="stack tight">VIO quality <select id="g-tune"></select></label>
+        <label class="row tight-row"><input type="checkbox" id="g-rsaware"> VIO models the rolling shutter</label>
+        <label class="row tight-row"><input type="checkbox" id="g-anchor"> Anchor the hold to the mark</label>
+        <label class="row tight-row"><input type="checkbox" id="g-fallback" checked> Fly back to the mark after losing tracking</label>
+        <p class="meta">All of these switch mid-flight, and a running test notes each change.</p>
+      </div>
+
+      <div class="stack panel" role="tabpanel" id="g-panel-camera" aria-labelledby="g-tab-camera" hidden>
+        <label class="stack tight">Setup <select id="g-setup"></select></label>
+        <label class="stack tight">Readout time <select id="g-readout"></select></label>
+        <label class="stack tight">Exposure <select id="g-exposure"></select></label>
+        <label class="stack tight">Mount <select id="g-mount"></select></label>
+        <label class="row tight-row"><input type="checkbox" id="g-lens" checked> Wide lens distortion</label>
+        <label class="row tight-row"><input type="checkbox" id="g-noise" checked> Sensor noise</label>
+        <hr>
+        <label class="stack tight">Name <input id="g-cam-name" maxlength="80" placeholder="Like: Justice D, soft mount, 20 ms"></label>
+        <button class="secondary" id="g-cam-save" type="button">Save this camera for the group</button>
+      </div>
+
+      <div class="stack panel" role="tabpanel" id="g-panel-tests" aria-labelledby="g-tab-tests" hidden>
+        <div class="row">
+          <button id="g-hold" type="button">Fly a 60 s hold</button>
+          
+        </div>
+        <p class="meta">Our best setup: anchored, GNSS off, fallback on.</p>
+        <section class="stack" id="g-result" hidden></section>
+        <hr>
+        <section class="stack" aria-labelledby="g-ot-h">
+          <div class="stack tight">
+            <span class="eyebrow" id="g-ot-h">Ottawa test</span>
+            <p class="meta">Farm site, 20 m, GNSS off. Pass: inside 1 m for 60 s.</p>
+          </div>
+          <strong class="row tight-row" id="g-ot-top" hidden></strong>
+          <div id="g-ot-board" hidden></div>
+          <p class="meta" id="g-ot-empty">Not flown yet.</p>
+          <details class="stack tight">
+<summary class="row between"><span class="type-label-md">Tune the tracker</span><span class="chip" id="g-tr-name"></span></summary>
+          <label class="stack tight"><span class="row between"><span>Corner threshold</span><span class="meta" id="g-tr-threshold-out"></span></span>
+            <input type="range" id="g-tr-threshold" min="2" max="40" step="1"></label>
+          <label class="stack tight"><span class="row between"><span>Min feature distance</span><span class="meta" id="g-tr-mindist-out"></span></span>
+            <input type="range" id="g-tr-mindist" min="1" max="20" step="1"></label>
+          <label class="stack tight"><span class="row between"><span>Max features</span><span class="meta" id="g-tr-max-out"></span></span>
+            <input type="range" id="g-tr-max" min="200" max="6000" step="100"></label>
+          <label class="stack tight"><span class="row between"><span>Pyramid levels</span><span class="meta" id="g-tr-levels-out"></span></span>
+            <input type="range" id="g-tr-levels" min="1" max="4" step="1"></label>
+          <label class="stack tight"><span class="row between"><span>Contrast boost</span><span class="meta" id="g-tr-contrast-out"></span></span>
+            <input type="range" id="g-tr-contrast" min="1" max="4" step="0.25"></label>
+          </details>
+<p class="meta" id="g-ot-live"></p>
+          <div class="row">
+            <button class="secondary small" id="g-ot-fly" type="button">Fly the Ottawa test</button>
+            <button class="secondary small" id="g-ot-sweep" type="button">Sweep 6 presets</button>
+            <button class="ghost small" id="g-tr-reset" type="button">Default tracker</button>
+          </div>
+          
+          <section class="stack card" id="g-ot-result" hidden aria-live="polite"></section>
+        </section>
+        <hr>
+        <section class="stack" aria-labelledby="g-night-h">
+          <div class="stack tight">
+            <span class="eyebrow" id="g-night-h">Worst night</span>
+            <p class="meta">Six November evenings, climbing until the hold drifts out of 1 m.</p>
+          </div>
+          <strong id="g-night-top" hidden></strong>
+          <div id="g-night-board" hidden></div>
+          <p class="meta" id="g-night-empty">Not flown yet.</p>
+          <div class="row">
+            <button class="secondary small" id="g-night-fly" type="button">Fly the worst night</button>
+          </div>
+          
+          <section class="stack card" id="g-night-result" hidden aria-live="polite"></section>
+        </section>
+        <hr>
+        <section class="stack" aria-labelledby="g-lose-h">
+          <div class="stack tight">
+            <span class="eyebrow" id="g-lose-h">Losing the lock</span>
+            <p class="meta">Tracking cut for 1 to 20 s at 20 m, with and without the fallback. Timed until steady inside 1 m.</p>
+          </div>
+          <strong id="g-lose-top" hidden></strong>
+          <div id="g-lose-board" hidden></div>
+          <p class="meta" id="g-lose-empty">Not flown yet.</p>
+          <div class="row">
+            <button class="secondary small" id="g-lose-fly" type="button">Fly losing the lock</button>
+          </div>
+          
+          <section class="stack card" id="g-lose-result" hidden aria-live="polite"></section>
+        </section>
+        <hr>
+        <span class="eyebrow">Shared runs</span>
+        <ul class="stack plain board" id="g-board"></ul>
+        <details id="g-earlier" hidden>
+          <summary class="meta">Earlier results from the old pages</summary>
+          <ul class="stack plain board" id="g-earlier-list"></ul>
+        </details>
+      </div>
+      <p class="meta" id="g-flash" role="status"></p>
+    </aside>
+  </div>
+</div>
+<section class="stack loose plan-drawer" id="plan-view" hidden aria-label="Plan and notes">
+  <header class="row between"><div class="stack tight">
+    <span class="eyebrow">Red team sim</span>
+    <h1>Our plan for now</h1>
+    <p class="muted">We are going with the researched answers for now. Add your own decision on any question to change it.</p>
+  </div><button class="secondary small" id="g-plan-close" type="button">Back to the sim</button></header>
+  <nav class="row" id="tabs" aria-label="Stages"></nav>
+  <section id="stage" class="stack"></section>
+</section>
+
+<section class="stack loose plan-drawer" id="measure-view" hidden aria-label="Measure">
+  <header class="row between"><div class="stack tight">
+    <span class="eyebrow">Red team sim</span>
+    <h1>Measuring the real drone</h1>
+    <p class="muted">Everything Orqa doesn't publish, how to measure it, and where each number goes in the sim.</p>
+  </div><button class="secondary small" id="g-measure-close" type="button">Back to the sim</button></header>
+  <div class="stack loose" id="measure-body"><p class="meta">Loading&hellip;</p></div>
+</section>
+
+<section class="stack loose plan-drawer" id="export-view" hidden aria-label="Export to GitHub">
+  <header class="row between"><div class="stack tight">
+    <span class="eyebrow">Red team sim</span>
+    <h1>Export to GitHub</h1>
+    <p class="muted">Make a repository and push the sim's source into it, in one go.</p>
+  </div><button class="secondary small" id="g-export-close" type="button">Back to the sim</button></header>
+  <div class="card stack export-card">
+    <label>Repository
+      <select id="x-repo" aria-describedby="x-repo-note"><option value="">Loading your repositories&hellip;</option></select>
+    </label>
+    <p class="meta" id="x-repo-note">Pick one you have, or make a new one right here.</p>
+    <div class="stack tight" id="x-new" hidden>
+      <label>New repository name <input id="x-new-name" value="red-team-sim" maxlength="100" pattern="[A-Za-z0-9._-]+"></label>
+      <label class="row"><input type="checkbox" id="x-new-private" checked> Private</label>
+    </div>
+    <div class="row">
+      <label class="grow">Branch <input id="x-branch" value="main" maxlength="100"></label>
+      <label class="grow">Folder in the repo <input id="x-folder" placeholder="leave empty for the top" maxlength="100"></label>
+    </div>
+    <label>Commit message <input id="x-message" value="Red team sim from Ambition" maxlength="200"></label>
+    <div class="row between">
+      <p class="meta" id="x-files"></p>
+      <button id="x-push" type="button" disabled>Push to GitHub</button>
+    </div>
+    <p class="meta" id="x-status" role="status"></p>
+  </div>
+  <details class="card">
+    <summary>Running it on your own machine</summary>
+    <div class="stack tight">
+      <p>The repo gets the source files and a README. To run it outside Ambition, serve the folder with any static server after bundling <code>src/main.js</code>, and supply three.js, a stylesheet for the kit's variables, and a small stand-in for <code>window.ambition</code>. The Ottawa ground files are not included.</p>
+    </div>
+  </details>
+</section>
+
+<section class="stack loose learn-view" id="learn-view" hidden aria-label="Learn">
+  <header class="row between"><div class="stack tight">
+    <span class="eyebrow">Red team sim</span>
+    <h1>From drones and cameras to the challenge</h1>
+    <p class="muted">Ten short lessons, each with numbers to play with and a way to see it in the sim.</p>
+  </div><button class="secondary small" id="g-learn-close" type="button">Back to the sim</button></header>
+  <div class="learn-layout" id="learn-body"></div>
+</section>
